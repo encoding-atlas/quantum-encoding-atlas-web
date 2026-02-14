@@ -1,26 +1,349 @@
+/* ================================================================
+   QUANTUM ENCODING ATLAS — DESIGN TOKENS
+   ================================================================
+   Color format: OKLCH (Oklab Lightness, Chroma, Hue)
+   - L: 0 (black) → 1 (white)
+   - C: 0 (gray) → ~0.37 (most saturated)
+   - H: 0-360 degrees on the hue wheel
+
+   Hue reference:
+     0°   = Red          195° = Cyan
+     30°  = Orange        220° = Sky Blue
+     60°  = Yellow        265° = Violet/Indigo
+     80°  = Gold          280° = Purple
+     120° = Green         330° = Magenta/Pink
+     160° = Emerald/Teal
+   ================================================================ */
+
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "katex/dist/katex.min.css";
+
+/* Class-based dark mode for next-themes */
+@custom-variant dark (&:is(.dark *));
+
+/* ================================================================
+   COLOR VARIABLES
+   ================================================================ */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --radius: 0.5rem;
+
+  /* Core semantic — Light mode */
+  --background: oklch(0.98 0.005 260);
+  --foreground: oklch(0.15 0.02 260);
+
+  --card: oklch(1.0 0.0 0);
+  --card-foreground: oklch(0.15 0.02 260);
+
+  --popover: oklch(1.0 0.0 0);
+  --popover-foreground: oklch(0.15 0.02 260);
+
+  --primary: oklch(0.50 0.24 270);
+  --primary-foreground: oklch(0.98 0.005 260);
+
+  --secondary: oklch(0.94 0.015 260);
+  --secondary-foreground: oklch(0.20 0.02 260);
+
+  --muted: oklch(0.95 0.01 260);
+  --muted-foreground: oklch(0.45 0.02 260);
+
+  --accent: oklch(0.65 0.17 195);
+  --accent-foreground: oklch(0.10 0.03 220);
+
+  --destructive: oklch(0.58 0.24 25);
+  --destructive-foreground: oklch(0.98 0.0 0);
+
+  --border: oklch(0.90 0.012 260);
+  --input: oklch(0.90 0.012 260);
+  --ring: oklch(0.50 0.24 270);
+
+  /* Chart colors — Light mode */
+  --chart-1: oklch(0.50 0.24 270);
+  --chart-2: oklch(0.65 0.17 195);
+  --chart-3: oklch(0.55 0.22 160);
+  --chart-4: oklch(0.55 0.25 330);
+  --chart-5: oklch(0.60 0.20 80);
+
+  /* Encoding category colors — Light mode */
+  --cat-angle: oklch(0.60 0.20 35);
+  --cat-amplitude: oklch(0.55 0.22 160);
+  --cat-basis: oklch(0.55 0.18 220);
+  --cat-entangling: oklch(0.50 0.24 270);
+  --cat-variational: oklch(0.55 0.25 330);
+  --cat-physics: oklch(0.58 0.20 80);
+  --cat-symmetry: oklch(0.60 0.17 195);
+
+  /* Quantum accent colors — Light mode */
+  --quantum-cyan: oklch(0.78 0.16 195);
+  --quantum-violet: oklch(0.55 0.27 280);
+  --quantum-magenta: oklch(0.62 0.27 330);
+  --quantum-emerald: oklch(0.70 0.20 160);
 }
+
+.dark {
+  /* Core semantic — Dark mode */
+  --background: oklch(0.09 0.025 265);
+  --foreground: oklch(0.92 0.015 220);
+
+  --card: oklch(0.12 0.03 265);
+  --card-foreground: oklch(0.92 0.015 220);
+
+  --popover: oklch(0.14 0.03 265);
+  --popover-foreground: oklch(0.92 0.015 220);
+
+  --primary: oklch(0.68 0.24 270);
+  --primary-foreground: oklch(0.98 0.0 0);
+
+  --secondary: oklch(0.17 0.04 265);
+  --secondary-foreground: oklch(0.88 0.015 220);
+
+  --muted: oklch(0.17 0.03 265);
+  --muted-foreground: oklch(0.58 0.03 260);
+
+  --accent: oklch(0.75 0.17 195);
+  --accent-foreground: oklch(0.08 0.025 265);
+
+  --destructive: oklch(0.65 0.22 20);
+  --destructive-foreground: oklch(0.98 0.0 0);
+
+  --border: oklch(0.22 0.04 265);
+  --input: oklch(0.22 0.04 265);
+  --ring: oklch(0.68 0.24 270);
+
+  /* Chart colors — Dark mode */
+  --chart-1: oklch(0.68 0.24 270);
+  --chart-2: oklch(0.75 0.17 195);
+  --chart-3: oklch(0.72 0.20 160);
+  --chart-4: oklch(0.70 0.26 330);
+  --chart-5: oklch(0.78 0.18 85);
+
+  /* Encoding category colors — Dark mode */
+  --cat-angle: oklch(0.75 0.20 35);
+  --cat-amplitude: oklch(0.72 0.22 160);
+  --cat-basis: oklch(0.72 0.18 220);
+  --cat-entangling: oklch(0.70 0.24 270);
+  --cat-variational: oklch(0.70 0.25 330);
+  --cat-physics: oklch(0.75 0.20 80);
+  --cat-symmetry: oklch(0.75 0.17 195);
+
+  /* Quantum accent colors — Dark mode */
+  --quantum-cyan: oklch(0.82 0.18 195);
+  --quantum-violet: oklch(0.65 0.28 280);
+  --quantum-magenta: oklch(0.70 0.27 330);
+  --quantum-emerald: oklch(0.75 0.22 160);
+}
+
+/* ================================================================
+   TAILWIND v4 THEME REGISTRATION
+   ================================================================ */
 
 @theme inline {
+  /* Semantic colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Encoding category colors */
+  --color-cat-angle: var(--cat-angle);
+  --color-cat-amplitude: var(--cat-amplitude);
+  --color-cat-basis: var(--cat-basis);
+  --color-cat-entangling: var(--cat-entangling);
+  --color-cat-variational: var(--cat-variational);
+  --color-cat-physics: var(--cat-physics);
+  --color-cat-symmetry: var(--cat-symmetry);
+
+  /* Quantum accent colors */
+  --color-quantum-cyan: var(--quantum-cyan);
+  --color-quantum-violet: var(--quantum-violet);
+  --color-quantum-magenta: var(--quantum-magenta);
+  --color-quantum-emerald: var(--quantum-emerald);
+
+  /* Border radii */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* Font families — populated by next/font CSS variables */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ================================================================
+   BASE STYLES
+   ================================================================ */
+
+@layer base {
+  body {
+    font-feature-settings: "liga" 1, "calt" 1;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  code, pre, kbd, samp {
+    font-family: var(--font-mono);
+    font-feature-settings: "liga" 1, "calt" 1;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ================================================================
+   UTILITY CLASSES
+   ================================================================ */
+
+@layer utilities {
+  /* Glassmorphism navbar */
+  .glass-navbar {
+    background: oklch(0.98 0.005 260 / 0.8);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    border-bottom: 1px solid oklch(0.90 0.012 260 / 0.5);
+  }
+
+  :is(.dark) .glass-navbar {
+    background: oklch(0.09 0.025 265 / 0.8);
+    border-bottom: 1px solid oklch(0.22 0.04 265 / 0.5);
+  }
+
+  /* Glow effects */
+  .glow-primary {
+    box-shadow:
+      0 0 10px oklch(0.50 0.24 270 / 0.3),
+      0 0 20px oklch(0.50 0.24 270 / 0.1);
+  }
+
+  :is(.dark) .glow-primary {
+    box-shadow:
+      0 0 10px oklch(0.68 0.24 270 / 0.4),
+      0 0 25px oklch(0.68 0.24 270 / 0.15);
+  }
+
+  .glow-accent {
+    box-shadow:
+      0 0 10px oklch(0.65 0.17 195 / 0.3),
+      0 0 20px oklch(0.65 0.17 195 / 0.1);
+  }
+
+  :is(.dark) .glow-accent {
+    box-shadow:
+      0 0 10px oklch(0.75 0.17 195 / 0.4),
+      0 0 25px oklch(0.75 0.17 195 / 0.15);
+  }
+
+  /* Gradient presets */
+  .gradient-quantum {
+    background: linear-gradient(135deg, var(--quantum-violet), var(--quantum-cyan));
+  }
+
+  .gradient-quantum-warm {
+    background: linear-gradient(135deg, var(--quantum-magenta), var(--quantum-violet));
+  }
+
+  .gradient-text-quantum {
+    background: linear-gradient(135deg, var(--quantum-violet), var(--quantum-cyan));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Page enter animation — CSS-only replacement for motion.div */
+  .animate-page-enter {
+    animation: page-enter 0.2s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  }
+
+  /* Gradient border using CSS mask composite */
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      var(--quantum-violet),
+      var(--quantum-cyan)
+    );
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    opacity: 0.25;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+  }
+
+  .gradient-border:hover::before {
+    opacity: 0.55;
+  }
+
+  /* Quantum glow ring for hover/focus */
+  .glow-ring {
+    box-shadow:
+      0 0 0 1px oklch(0.68 0.24 270 / 0.15),
+      0 0 20px oklch(0.68 0.24 270 / 0.08);
+  }
+
+  :is(.dark) .glow-ring {
+    box-shadow:
+      0 0 0 1px oklch(0.68 0.24 270 / 0.25),
+      0 0 25px oklch(0.68 0.24 270 / 0.12);
+  }
+
+  /* Quantum pulse animation */
+  .animate-quantum-pulse {
+    animation: quantum-pulse 3s ease-in-out infinite;
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes quantum-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Reduced motion overrides */
+@media (prefers-reduced-motion: reduce) {
+  .animate-quantum-pulse {
+    animation: none;
+  }
 }
