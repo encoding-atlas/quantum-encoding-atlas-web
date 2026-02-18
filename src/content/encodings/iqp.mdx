@@ -1,0 +1,43 @@
+## Overview
+
+The Instantaneous Quantum Polynomial (IQP) encoding is a feature map built from diagonal gates sandwiched between layers of Hadamard gates. Its defining property is that the entangling interactions are all **mutually commuting** (diagonal in the $Z$-basis), meaning they could in principle be applied simultaneously -- hence "instantaneous." The general structure for one repetition is:
+
+<DisplayMath formula="|\psi(\mathbf{x})\rangle = \left[\prod_{\{i,j\}} \text{CZ}_{ij}\, R_{ZZ}(x_i x_j) \cdot \bigotimes_k H\, R_Z(x_k)\, H\right]|0\rangle^{\otimes n}" />
+
+The circuit alternates between Hadamard layers that create superposition and diagonal phase layers that encode features into the relative phases of computational basis states.
+
+## Classical Hardness Guarantee
+
+The IQP encoding derives its theoretical significance from a landmark result in computational complexity: **sampling from the output distribution of IQP circuits is classically hard** under plausible complexity-theoretic assumptions. Specifically, Bremner, Jozsa, and Shepherd (2011) showed that if IQP output distributions could be sampled classically in polynomial time (even approximately), the **polynomial hierarchy would collapse** to its third level -- a consequence widely believed to be false.
+
+This hardness result applies to the *sampling* problem, not to computing individual expectation values. It provides the strongest known theoretical motivation for using IQP-type circuits as quantum feature maps: the kernel function $K(\mathbf{x}, \mathbf{x}') = |\langle \psi(\mathbf{x})|\psi(\mathbf{x}')\rangle|^2$ is believed to be classically intractable to evaluate exactly, making it a genuine candidate for quantum advantage in kernel methods.
+
+## Phase-Only Encoding
+
+A key structural property of IQP circuits is that all data dependence occurs through **phase gates** ($R_Z$ and $R_{ZZ}$). The Hadamard gates are fixed and data-independent. This means the encoding maps features entirely into the phase structure of the quantum state rather than into amplitude ratios. The consequence is that individual qubit measurements in the $Z$-basis are uniformly random -- all information is stored in multi-qubit correlations accessible only through interference.
+
+The diagonal interaction terms take the form:
+
+<DisplayMath formula="R_{ZZ}(x_i x_j) = \exp\left(-i \frac{x_i x_j}{2} Z_i Z_j\right)" />
+
+These encode **pairwise feature products** into two-qubit phases, creating a feature map that is inherently second-order in the input features.
+
+## Entanglement Topology
+
+The choice of which qubit pairs $\{i, j\}$ participate in $ZZ$ interactions defines the **entanglement topology** of the IQP encoding. Common choices include:
+
+- **Linear (nearest-neighbor)**: Only adjacent qubits interact, matching the connectivity of linear-chain hardware. This minimizes SWAP overhead but limits the feature interactions captured.
+- **Circular**: Like linear, but with an additional connection between the first and last qubits, adding one more interaction term.
+- **Full (all-to-all)**: Every pair of qubits interacts, capturing all $\binom{n}{2}$ pairwise feature products. This is the most expressive topology but requires $O(n^2)$ two-qubit gates and may need SWAP routing on hardware with limited connectivity.
+
+## Repetitions and the Barren Plateau Trade-off
+
+Repeating the IQP encoding block $r$ times increases the circuit's expressibility by allowing higher-order Fourier frequencies in the encoded function. However, deeper circuits face the **barren plateau** problem: the variance of the cost function gradient shrinks exponentially with circuit depth, making optimization increasingly difficult.
+
+<DisplayMath formula="|\psi_r(\mathbf{x})\rangle = \left[U_{\text{IQP}}(\mathbf{x})\right]^r |0\rangle^{\otimes n}" />
+
+For kernel methods (where no trainable parameters exist), this trade-off manifests differently: more repetitions produce a more expressive kernel but one that becomes increasingly concentrated (kernel values approach zero for most input pairs), reducing the effective training signal. Empirically, $r = 2$ or $r = 3$ strikes a good balance for most quantum kernel learning tasks.
+
+## Practical Considerations
+
+IQP encoding is one of the most theoretically motivated feature maps for quantum machine learning. Its classical hardness guarantee, combined with its structured phase encoding and natural connection to quantum kernel methods, makes it a strong default choice when seeking potential quantum advantage. The primary practical challenges are the $O(n^2)$ gate count for full connectivity and the need for careful feature scaling -- since features enter as phase angles, they should be scaled to $[0, 2\pi)$ to avoid redundancy from the periodicity of the rotation gates.

@@ -1,0 +1,47 @@
+## Overview
+
+Angle encoding is the simplest and most intuitive quantum feature map: each classical feature $x_i$ is mapped to the rotation angle of a single-qubit gate acting on qubit $i$. The resulting state is a tensor product of independently rotated qubits:
+
+<DisplayMath formula="|\psi(\mathbf{x})\rangle = \bigotimes_{i=0}^{n-1} R_a(x_i)|0\rangle" />
+
+where $R_a \in \{R_X, R_Y, R_Z\}$ denotes a rotation about axis $a$ on the Bloch sphere. Because the qubits are never entangled, the full state is always a **product state** and can be described by $n$ independent single-qubit density matrices.
+
+## Choosing a Rotation Axis
+
+The three Pauli rotations embed data differently on the Bloch sphere:
+
+- **$R_Y(\theta)$** maps $|0\rangle$ to $\cos(\theta/2)|0\rangle + \sin(\theta/2)|1\rangle$, producing **real-valued amplitudes**. This is the default and most widely used axis because measurement probabilities depend smoothly on $\theta$ and classical simulation is straightforward.
+- **$R_X(\theta)$** produces complex amplitudes with phases on the $Y$-axis of the Bloch sphere. It is functionally equivalent to $R_Y$ up to a global phase when measuring in the $Z$-basis.
+- **$R_Z(\theta)$** applies a phase $e^{-i\theta/2}$ to $|1\rangle$ but does not change the measurement probabilities of $|0\rangle$ alone. It must be preceded by a Hadamard or another basis-change gate to produce a meaningful encoding, making it less natural as a standalone rotation.
+
+In practice, $R_Y$ is preferred because it produces non-trivial measurement statistics without auxiliary gates and keeps amplitudes real, simplifying both classical simulation and gradient computation.
+
+## Feature Scaling and Bloch Sphere Coverage
+
+Each rotation $R_a(\theta)$ is $2\pi$-periodic, so the encoding maps features from $[0, 2\pi)$ onto a full great circle of the Bloch sphere. If the raw feature range is $[a, b]$, the standard preprocessing is:
+
+<DisplayMath formula="x_i \mapsto \frac{x_i - a}{b - a} \cdot 2\pi" />
+
+Alternatively, mapping to $[-\pi, \pi]$ centers the encoding around the $|0\rangle$ pole. Improper scaling leads to **aliasing**: distinct feature values that map to the same quantum state because they differ by a multiple of $2\pi$.
+
+## Classical Simulability
+
+Because angle encoding produces product states, the expectation value of any tensor-product observable $O = \bigotimes_i O_i$ factorizes:
+
+<DisplayMath formula="\langle O \rangle = \prod_{i=0}^{n-1} \langle 0|R_a^\dagger(x_i)\, O_i\, R_a(x_i)|0\rangle" />
+
+Each factor is a $2\times 2$ matrix computation, so the full expectation value is computable in $O(n)$ time classically. This means angle encoding **cannot provide quantum advantage on its own**. Its power emerges only when combined with entangling layers, as in variational quantum classifiers (VQCs) or quantum kernel methods.
+
+## Combining with Entangling Layers
+
+The standard variational pattern interleaves angle-encoding layers with parameterized entangling blocks:
+
+$$
+|\psi(\mathbf{x}, \boldsymbol{\theta})\rangle = \prod_{l=1}^{L} \left[ U_{\text{ent}}(\boldsymbol{\theta}_l) \cdot \bigotimes_i R_Y(x_i) \right] |0\rangle^{\otimes n}
+$$
+
+Adding CNOT or CZ layers between encoding repetitions breaks the product-state structure, enabling the circuit to capture **feature-feature correlations** and access regions of Hilbert space unreachable by product states alone. The number of encoding repetitions $L$ directly controls the Fourier frequencies accessible to the model, following the data-reuploading universality framework.
+
+## When to Use Angle Encoding
+
+Angle encoding is the right starting point when you need a **shallow, noise-resilient** feature map for NISQ hardware, a **fast baseline** for benchmarking more complex encodings, or a **modular building block** inside a larger variational ansatz. Its one-gate-per-feature structure makes it the lowest-depth encoding available, with trainability estimates near $0.9$ and negligible barren plateau risk. For problems requiring feature interactions or quantum advantage, pair it with entangling layers or consider IQP and ZZ feature maps directly.

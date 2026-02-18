@@ -1,0 +1,41 @@
+## Overview
+
+Basis encoding is the most direct mapping between classical and quantum information: each classical bit string is encoded into the corresponding computational basis state. Given a binary input $\mathbf{x} = (x_0, x_1, \ldots, x_{n-1})$ where $x_i \in \{0, 1\}$, the encoded state is:
+
+<DisplayMath formula="|\psi(\mathbf{x})\rangle = |x_0 x_1 \cdots x_{n-1}\rangle" />
+
+This is a direct product state in the computational basis. If $x_i = 1$, a Pauli-$X$ gate flips qubit $i$ from $|0\rangle$ to $|1\rangle$; if $x_i = 0$, the qubit remains untouched. The encoding requires at most $n$ single-qubit gates and zero entangling gates, making it one of the shallowest possible quantum encodings.
+
+## Binarization of Continuous Features
+
+Real-world datasets are typically continuous-valued, so a **binarization** step is required before basis encoding can be applied. The simplest approach is threshold binarization:
+
+<DisplayMath formula="x_i^{\text{bin}} = \begin{cases} 1 & \text{if } x_i \geq \tau \\ 0 & \text{if } x_i < \tau \end{cases}" />
+
+where $\tau$ is a threshold (often the feature median or mean). More sophisticated approaches include multi-bit discretization, where each continuous feature is represented by $k$ bits of precision, expanding the required qubit count to $nk$. The choice of binarization scheme has a significant impact on downstream task performance, as it determines how much continuous information is preserved.
+
+## Data-Dependent Gate Counts
+
+Unlike most encodings where circuit structure is fixed for a given feature dimension, basis encoding has a **data-dependent gate count**: the number of $X$ gates equals the Hamming weight (number of 1s) of the input bit string. An all-zeros input requires zero gates, while an all-ones input requires $n$ gates. This property means circuit depth and execution time vary across data samples, which can complicate batched execution on quantum hardware.
+
+## Orthogonality Property
+
+A defining characteristic of basis encoding is that distinct binary inputs map to **mutually orthogonal** quantum states:
+
+<DisplayMath formula="\langle \psi(\mathbf{x}) | \psi(\mathbf{x}') \rangle = \delta_{\mathbf{x}, \mathbf{x}'}" />
+
+This perfect distinguishability means that, in principle, a single quantum measurement in the computational basis can perfectly identify the encoded input. The orthogonality property makes basis encoding particularly suitable for algorithms that rely on state discrimination, such as Grover's search and certain quantum error correction schemes.
+
+## Applications in Quantum Algorithms
+
+Basis encoding is the natural input format for several foundational quantum algorithms:
+
+- **Grover's search**: The oracle marks computational basis states satisfying a Boolean predicate. Input data must be in basis-encoded form for the oracle to act on it directly.
+- **QAOA (Quantum Approximate Optimization Algorithm)**: The cost function is typically diagonal in the computational basis, meaning the problem Hamiltonian acts directly on basis-encoded bit strings representing candidate solutions.
+- **Quantum counting and amplitude estimation**: These algorithms operate on superpositions of basis-encoded states and extract properties of the marked subset.
+
+## Limitations and Trade-offs
+
+The primary limitation of basis encoding is the **information bottleneck** imposed by binarization: each qubit carries exactly one bit of classical information, with no compression or superposition advantage. Unlike amplitude encoding, which achieves exponential compression, basis encoding scales linearly -- $n$ qubits encode exactly $n$ bits.
+
+Furthermore, because basis states are orthogonal, the quantum kernel $K(\mathbf{x}, \mathbf{x}') = |\langle\psi(\mathbf{x})|\psi(\mathbf{x}')\rangle|^2$ is trivially $\delta_{\mathbf{x},\mathbf{x}'}$, providing no useful similarity structure for kernel-based learning. Basis encoding is therefore rarely used in quantum machine learning contexts that rely on inner-product kernels, but it remains indispensable for combinatorial optimization and oracle-based quantum algorithms where the computational basis is the natural representation.

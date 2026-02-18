@@ -1,0 +1,55 @@
+## Overview
+
+The swap equivariant encoding produces quantum feature maps that are exactly equivariant under **pairwise permutations** (transpositions) of input features. When two input features are swapped, the encoded quantum state undergoes a corresponding SWAP operation on the associated qubits. This property is valuable for data where certain pairs of features are interchangeable -- for example, distances between identical particles or symmetric interaction terms.
+
+## SWAP Symmetry and CZ Gates
+
+The central building block is the controlled-$Z$ (CZ) gate, which is inherently symmetric under qubit exchange:
+
+$$\text{CZ}_{ij} = |0\rangle\langle 0|_i \otimes I_j + |1\rangle\langle 1|_i \otimes Z_j$$
+
+The CZ gate satisfies $\text{SWAP}_{ij}\, \text{CZ}_{ij}\, \text{SWAP}_{ij} = \text{CZ}_{ij}$ because the $ZZ$-type interaction treats both qubits identically. This makes CZ the natural entangling gate for swap-equivariant circuits: any circuit composed entirely of CZ gates between feature-paired qubits will respect pairwise permutation symmetry.
+
+## Feature Pairing
+
+In a swap equivariant encoding, features are grouped into **exchangeable pairs** $(x_i, x_j)$ where swapping $x_i \leftrightarrow x_j$ should not change the model output (up to a corresponding qubit permutation). Each pair is encoded on two qubits, and the CZ gate between them creates entanglement that is invariant under the exchange.
+
+For $d$ features with $d/2$ exchangeable pairs, the encoding uses $d$ qubits with CZ gates applied between each paired set. Features that are not part of any exchangeable pair are encoded without CZ entanglement.
+
+## Hadamard Gates and SWAP Commutation
+
+Single-qubit Hadamard gates $H$ play a special role in swap equivariant circuits because $H$ commutes with the SWAP operation when applied identically to both qubits in a pair:
+
+$$(H_i \otimes H_j)\, \text{SWAP}_{ij} = \text{SWAP}_{ij}\, (H_i \otimes H_j)$$
+
+This commutation holds because SWAP simply exchanges the two tensor factors, and if both carry the same gate $H$, the exchange has no effect. Consequently, layers of Hadamard gates can be freely inserted into the circuit without breaking equivariance, providing a mechanism to change the encoding basis (from $Z$ to $X$) while preserving the symmetry.
+
+A typical layer structure is:
+
+$$\text{Layer} = \text{CZ}_{ij} \cdot (H_i \otimes H_j) \cdot (R_Z(x_i) \otimes R_Z(x_j))$$
+
+The $R_Z$ gates encode features, $H$ gates rotate into the $X$-basis for the CZ interaction, and the CZ gate entangles the pair symmetrically.
+
+## Even Features Requirement
+
+Swap equivariant encoding requires an **even number of features** (or, more precisely, an even number of features within each exchangeable group). If $d$ is odd, one feature lacks a swap partner and must be handled separately -- either by padding with a constant feature, by encoding it on an ancilla qubit without a CZ partner, or by grouping it into a larger permutation-equivariant block.
+
+This even-pairing requirement arises because the SWAP operation is defined on pairs: there is no single-qubit analogue of a transposition. Circuits with unpaired qubits can still be equivariant under a subgroup of permutations, but full pairwise equivariance requires complete pairing.
+
+## Proof Sketch of Equivariance
+
+Let $\text{SWAP}_{ij}^{(q)}$ denote the SWAP gate on qubits $i, j$ and $\text{SWAP}_{ij}^{(x)}$ denote the corresponding swap of input features $x_i \leftrightarrow x_j$. The encoding is equivariant if:
+
+$$U(\text{SWAP}_{ij}^{(x)} \cdot \mathbf{x}) = \text{SWAP}_{ij}^{(q)}\, U(\mathbf{x})\, \text{SWAP}_{ij}^{(q)}$$
+
+**Data layer**: $R_Z(x_i) \otimes R_Z(x_j)$ maps to $R_Z(x_j) \otimes R_Z(x_i)$ under feature swap, which equals $\text{SWAP}^{(q)} (R_Z(x_i) \otimes R_Z(x_j)) \text{SWAP}^{(q)}$. This holds by definition of SWAP acting on tensor products.
+
+**Hadamard layer**: $(H \otimes H)$ commutes with $\text{SWAP}^{(q)}$ as shown above, so it passes through unchanged.
+
+**CZ layer**: $\text{CZ}_{ij}$ commutes with $\text{SWAP}_{ij}^{(q)}$ due to its symmetric structure.
+
+Composing all layers, each individually equivariant, yields a full circuit that is equivariant under the transposition $(i \leftrightarrow j)$. Extending to all pairs, the encoding is equivariant under the symmetric group $S_2^{d/2}$ (the direct product of $d/2$ transposition groups).
+
+## Practical Guidance
+
+Swap equivariant encoding is ideal when domain knowledge identifies interchangeable feature pairs: particle-particle distances in physics, symmetric bond features in chemistry, or player-player statistics in game analytics. The encoding is shallow (CZ gates are native on most hardware) and parameter-efficient (no learned parameters beyond the feature encoding itself). Ensure features are preprocessed to have comparable scales, since the CZ gate does not rescale its inputs. For problems requiring equivariance under arbitrary permutations (not just pairwise swaps), consider extending to the full symmetric group using more complex permutation-equivariant circuit constructions.

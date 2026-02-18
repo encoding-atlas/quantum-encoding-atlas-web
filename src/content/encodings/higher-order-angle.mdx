@@ -1,0 +1,38 @@
+## Overview
+
+Standard angle encoding maps each classical feature $x_i$ to a single rotation gate, producing a feature map that is linear in the input space. Higher-order angle encoding generalizes this by constructing **polynomial feature expansions** before distributing them across qubit rotations, enabling the quantum circuit to capture nonlinear correlations without increasing qubit count.
+
+## Polynomial Feature Expansion
+
+Given an input vector $\mathbf{x} = (x_1, x_2, \ldots, x_d)$, a degree-$k$ expansion generates all monomials up to order $k$. For quadratic encoding ($k = 2$), the expanded feature set includes all pairwise products:
+
+$$\phi^{(2)}(\mathbf{x}) = \{x_i \cdot x_j \mid 1 \leq i \leq j \leq d\}$$
+
+Each monomial $x_i x_j$ is then encoded as a rotation angle on a dedicated qubit (or shared via entangling gates). For $d$ features at order $k$, the number of terms grows as $\binom{d + k}{k}$, which is $O(d^k)$. This exponential scaling in $k$ is the principal resource constraint and motivates careful selection of the polynomial degree.
+
+## Combination Modes
+
+Two strategies exist for mapping polynomial terms onto rotation gates:
+
+- **Product mode**: Each monomial $x_i x_j$ drives a single $R_Y(x_i x_j)$ or $R_Z(x_i x_j)$ gate on one qubit. This preserves the full product structure but requires one gate per term.
+- **Sum mode**: Products involving the same qubit index are summed before encoding, e.g., $R_Y\!\bigl(\sum_j x_i x_j\bigr)$. This compresses the feature map at the cost of losing individual term resolution.
+
+Product mode is more expressive but gate-hungry; sum mode trades expressivity for shallower circuits.
+
+## Connection to Classical Kernels
+
+The inner product between two higher-order encoded states approximates a **polynomial kernel**:
+
+$$\langle \phi^{(k)}(\mathbf{x}) | \phi^{(k)}(\mathbf{x}') \rangle \;\approx\; (\mathbf{x} \cdot \mathbf{x}' + c)^k$$
+
+This mirrors the classical polynomial kernel used in support vector machines. The quantum advantage arises when the Hilbert space dimension $2^n$ exceeds $\binom{d+k}{k}$, allowing the circuit to embed additional entanglement-induced correlations that have no classical polynomial kernel counterpart.
+
+## Practical Considerations
+
+The primary design knob is the **interaction order** $k$. Setting $k = 1$ recovers standard angle encoding. Setting $k = 2$ is the most common choice, introducing $O(d^2)$ terms while remaining tractable for moderate feature dimensions ($d \lesssim 10$). Orders $k \geq 3$ are rarely used on current hardware because gate counts and circuit depth grow rapidly.
+
+When qubit budgets are tight, a common heuristic is to encode only a **subset of cross-terms** -- for example, nearest-neighbor products $x_i x_{i+1}$ -- which reduces the term count to $O(d)$ while still capturing local correlations. This subset selection can also be informed by domain knowledge about which feature interactions matter most for the downstream task.
+
+## When to Use Higher-Order Angle Encoding
+
+Higher-order angle encoding is well-suited for classification tasks where decision boundaries are nonlinear but the feature dimension is moderate. It is particularly effective when prior knowledge suggests that specific polynomial interactions between features are discriminative. For high-dimensional data, dimensionality reduction (e.g., PCA) should be applied before encoding to keep the monomial count manageable.

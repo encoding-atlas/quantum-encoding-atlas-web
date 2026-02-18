@@ -1,0 +1,40 @@
+## Overview
+
+Amplitude encoding achieves the most compact classical-to-quantum data mapping possible: an $N$-dimensional feature vector is stored in the amplitudes of $n = \lceil\log_2 N\rceil$ qubits. The encoded state is:
+
+<DisplayMath formula="|\psi(\mathbf{x})\rangle = \sum_{i=0}^{2^n - 1} \frac{x_i}{\|\mathbf{x}\|_2} |i\rangle" />
+
+where $|i\rangle$ denotes the $i$-th computational basis state and the feature vector $\mathbf{x}$ is $L_2$-normalized to ensure a valid quantum state. This **exponential compression** -- encoding $2^n$ features into $n$ qubits -- is the primary appeal of amplitude encoding and the foundation of quantum speedup claims in algorithms like HHL and quantum support vector machines.
+
+## State Preparation: The Mottonen Decomposition
+
+Preparing an arbitrary $n$-qubit state requires a circuit that implements the unitary mapping $|0\rangle^{\otimes n} \mapsto |\psi(\mathbf{x})\rangle$. The standard approach is the **Mottonen decomposition** (also called the multiplexed rotation decomposition), which recursively decomposes the target state into a sequence of uniformly controlled rotations:
+
+<DisplayMath formula="U = \prod_{k=1}^{n} \text{UCR}_Y^{(k)} \cdot \text{UCR}_Z^{(k)}" />
+
+Each uniformly controlled rotation $\text{UCR}^{(k)}$ acts on qubit $k$ conditioned on all preceding qubits, requiring $O(2^k)$ CNOT gates. The total gate count is $O(2^n)$ -- the same order as the number of encoded features. This means the **depth savings from logarithmic qubit count are offset by exponential circuit depth**, a fundamental tension in amplitude encoding.
+
+## The Normalization Trade-off
+
+The $L_2$ normalization $\mathbf{x} \mapsto \mathbf{x}/\|\mathbf{x}\|_2$ is mandatory for valid quantum amplitudes but introduces an information loss: vectors that differ only in magnitude become indistinguishable. For datasets where the norm carries semantic meaning (e.g., signal energy, distance from origin), this can degrade downstream model performance. Common mitigations include:
+
+- Appending the original norm as an additional feature before normalization
+- Using **angular features** (e.g., converting to spherical coordinates) that are inherently norm-independent
+- Choosing a kernel or loss function that is naturally scale-invariant
+
+## Zero-Padding and Qubit Overhead
+
+When $N$ is not a power of 2, the feature vector must be **zero-padded** to length $2^n$. For example, encoding 100 features requires $n = 7$ qubits (128 amplitudes), wasting 28 dimensions. While this padding does not affect correctness, it inflates the state preparation circuit and can reduce the effective signal-to-noise ratio if a large fraction of amplitudes are zero.
+
+## Backend Differences: Qubit Ordering
+
+A subtle but critical implementation detail is **qubit ordering**. PennyLane uses most-significant-bit (MSB) ordering, where qubit 0 corresponds to the highest-order bit in the binary representation of the basis state index. Qiskit uses least-significant-bit (LSB) ordering by default. This means the same amplitude vector $[a_0, a_1, a_2, a_3]$ maps to different physical qubit states in each framework:
+
+<DisplayMath formula="\text{PennyLane: } a_0|00\rangle + a_1|01\rangle + a_2|10\rangle + a_3|11\rangle \quad\text{(qubit 0 = MSB)}" />
+<DisplayMath formula="\text{Qiskit: } a_0|00\rangle + a_1|01\rangle + a_2|10\rangle + a_3|11\rangle \quad\text{(qubit 0 = LSB)}" />
+
+When porting circuits between backends, failing to account for this convention leads to silently permuted features -- a common source of bugs in quantum ML pipelines.
+
+## Practical Considerations
+
+Amplitude encoding is theoretically elegant but faces significant practical barriers on near-term hardware. The $O(2^n)$ circuit depth makes it highly susceptible to decoherence and gate errors, limiting its utility to small feature dimensions (typically $N \leq 16$) on current NISQ devices. For larger problems, approximate state preparation methods using variational circuits or QRAM (when available) may provide more practical alternatives. Despite these limitations, amplitude encoding remains foundational to quantum algorithm theory and is the encoding of choice when **qubit count is the binding constraint** and circuit depth budget is generous.

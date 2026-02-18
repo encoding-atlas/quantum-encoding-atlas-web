@@ -1,0 +1,52 @@
+## Overview
+
+The SO(2) equivariant encoding constructs quantum states that transform **exactly** under 2D rotations, mirroring the mathematical structure of the rotation group SO(2). When the input data is rotated by an angle $\alpha$ in the plane, the encoded quantum state acquires a corresponding unitary transformation, ensuring that the feature map respects continuous rotational symmetry by construction.
+
+## Mathematical Foundation
+
+The encoding maps a 2D input in polar coordinates $(r, \theta)$ to a quantum state expressed in the angular momentum eigenbasis:
+
+$$|\psi(r, \theta)\rangle = \sum_{m} c_m(r)\, e^{im\theta} |m\rangle$$
+
+Here $|m\rangle$ denotes the computational basis state associated with angular momentum quantum number $m$, and $c_m(r)$ are radial coefficients that depend only on the distance from the origin. The phase factor $e^{im\theta}$ ensures that a rotation of the input by $\alpha$ produces:
+
+$$|\psi(r, \theta + \alpha)\rangle = \sum_{m} c_m(r)\, e^{im(\theta + \alpha)} |m\rangle = R_z(\alpha) |\psi(r, \theta)\rangle$$
+
+where $R_z(\alpha) = \text{diag}(e^{im\alpha})$ acts as the representation of the SO(2) rotation on the Hilbert space.
+
+## Angular Momentum Eigenstates
+
+The basis states $|m\rangle$ are chosen to be eigenstates of the angular momentum operator $L_z$ with eigenvalue $m$. For an $n$-qubit system, the available angular momentum quantum numbers range over the computational basis labels, typically $m \in \{0, 1, \ldots, 2^n - 1\}$ or a symmetric range $m \in \{-2^{n-1}, \ldots, 2^{n-1} - 1\}$ depending on the encoding convention.
+
+The key insight is that $L_z$ eigenstates provide a natural Fourier decomposition: the angular dependence is captured entirely by the phase $e^{im\theta}$, while all radial information is absorbed into the coefficients $c_m(r)$.
+
+## Polar Coordinate Conversion
+
+Input data in Cartesian coordinates $(x_1, x_2)$ must be converted to polar form before encoding:
+
+$$r = \sqrt{x_1^2 + x_2^2}, \qquad \theta = \text{atan2}(x_2, x_1)$$
+
+This conversion is performed classically as a preprocessing step. For higher-dimensional inputs, pairs of features can be grouped and independently converted to polar coordinates, or the encoding can be applied to a 2D projection of the data.
+
+## Radial Functions
+
+The radial coefficients $c_m(r)$ control how the amplitude is distributed across angular momentum sectors as a function of distance from the origin. Two common choices are:
+
+- **Gaussian radial function**: $c_m(r) = \mathcal{N}\, \exp\!\bigl(-\frac{(r - r_m)^2}{2\sigma^2}\bigr)$, where $r_m$ is a learnable center for sector $m$ and $\sigma$ controls the width. This produces localized, smooth amplitude distributions.
+- **Uniform radial function**: $c_m(r) = 1/\sqrt{M}$ for all $m$, distributing amplitude equally regardless of $r$. Simple but discards all radial information, relying entirely on the angular encoding.
+
+Gaussian radial functions are preferred when the classification boundary depends on distance from the origin; uniform functions suffice when only angular information is discriminative.
+
+## Proof Sketch of Exact Equivariance
+
+To verify equivariance, consider a rotation $g_\alpha \in \text{SO}(2)$ acting on the input as $(r, \theta) \mapsto (r, \theta + \alpha)$. The encoded state transforms as:
+
+$$|\psi(g_\alpha \cdot \mathbf{x})\rangle = \sum_m c_m(r)\, e^{im(\theta + \alpha)} |m\rangle = \left(\sum_m e^{im\alpha} |m\rangle\langle m|\right) \sum_{m'} c_{m'}(r)\, e^{im'\theta} |m'\rangle$$
+
+$$= R_z(\alpha)\, |\psi(\mathbf{x})\rangle$$
+
+Since $R_z(\alpha)$ is a unitary representation of SO(2) on the Hilbert space, the encoding satisfies $U(g \cdot \mathbf{x}) = \rho(g)\, U(\mathbf{x})$ exactly. This guarantees that any observable measured after the encoding is invariant under input rotations if and only if it commutes with $R_z(\alpha)$.
+
+## Practical Guidance
+
+SO(2) equivariant encoding is ideal for 2D data with known rotational symmetry: point clouds, planar molecular configurations, or angular sensor data. Use Gaussian radial functions when radial information matters, and ensure that the number of qubits provides enough angular momentum sectors to resolve the angular complexity of the data. For $n$ qubits, the maximum angular frequency is $2^n - 1$, so $n = 3$ to $5$ qubits typically suffice for smooth angular distributions.

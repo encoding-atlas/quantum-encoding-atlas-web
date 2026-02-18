@@ -1,0 +1,43 @@
+## Overview
+
+Symmetry-inspired feature maps incorporate **heuristic symmetry constraints** into the circuit topology, guiding gate placement and parameter sharing based on geometric intuitions about the data. Unlike rigorous equivariant encodings (SO(2), cyclic, swap), these circuits do not mathematically guarantee covariance under a symmetry group. Instead, they use symmetry as an **inductive bias** -- a structural prior that steers the model toward solutions that respect approximate symmetries in the data.
+
+## Symmetry Types
+
+Four symmetry archetypes inform the circuit construction:
+
+**Rotation symmetry**: Gates are arranged so that the circuit structure is invariant under continuous rotations of the qubit indexing. This is implemented by applying identical parameterized layers cyclically shifted across qubits. For an $n$-qubit circuit, each layer applies the same gate sequence starting from qubit $i \bmod n$, producing a circuit that "looks the same" from every qubit's perspective.
+
+**Cyclic symmetry**: A discrete version of rotation symmetry. The circuit uses a ring connectivity where qubit $i$ interacts only with qubits $i \pm 1 \pmod{n}$. All nearest-neighbor entangling gates share the same parameter, enforcing translational invariance around the ring. This is appropriate when features have a periodic or circular ordering.
+
+**Reflection symmetry**: The circuit is structured so that reversing the qubit ordering leaves the gate pattern unchanged. This is achieved by mirroring the gate sequence: if qubit $i$ receives gate $G(\alpha)$, then qubit $n - 1 - i$ receives the same gate with the same parameter. Entangling gates between $(i, j)$ and $(n-1-i, n-1-j)$ also share parameters.
+
+**Full symmetry**: Combines rotation and reflection into the dihedral group $D_n$. Every gate parameter is shared across all $2n$ elements of the symmetry group, maximally constraining the circuit. This produces the most parameter-efficient encoding but is also the most restrictive.
+
+## Gate Selection by Symmetry
+
+Each symmetry type naturally suggests certain gate families:
+
+- Rotation and cyclic symmetries favor $R_{ZZ}$ entangling gates on nearest neighbors, since $ZZ$ interactions respect the ring topology.
+- Reflection symmetry pairs qubits symmetrically, making controlled-$Z$ (CZ) gates a natural choice because $\text{CZ}_{ij} = \text{CZ}_{ji}$.
+- Full symmetry benefits from gates that are invariant under both cyclic permutation and reversal, such as uniform $R_{ZZ}(\alpha)$ with a single shared angle $\alpha$ across all edges.
+
+Single-qubit gates are typically $R_Y(x_i)$ for data encoding, with symmetry enforced through parameter tying rather than gate type.
+
+## Heuristic vs. Rigorous Equivariance
+
+A critical distinction separates symmetry-inspired encodings from formally equivariant ones. An equivariant encoding satisfies:
+
+$$U(g \cdot \mathbf{x}) = \rho(g)\, U(\mathbf{x})\, \rho(g)^{\dagger} \quad \forall\, g \in G$$
+
+where $\rho(g)$ is a unitary representation of the symmetry group $G$. Symmetry-inspired encodings do **not** satisfy this relation exactly. Instead, they satisfy it approximately or only for a subset of group elements. The practical consequence is that symmetry-inspired circuits can break symmetry when it is advantageous -- offering flexibility that rigid equivariance does not.
+
+## Inductive Bias and Generalization
+
+The primary benefit of symmetry-inspired encodings is improved **generalization from limited data**. By reducing the effective number of free parameters through parameter sharing, these circuits have lower model complexity and are less prone to overfitting. The tradeoff is clear: if the data truly possesses the assumed symmetry, generalization improves substantially; if the symmetry assumption is wrong, the model is unnecessarily constrained and may underfit.
+
+Empirically, even approximate symmetry in the data (e.g., images that are roughly but not exactly rotation-invariant) benefits from symmetry-inspired encodings, because the inductive bias pushes the model toward the correct hypothesis class without strictly prohibiting asymmetric solutions.
+
+## Practical Guidance
+
+Choose the symmetry type based on domain knowledge: cyclic for periodic features (angles, time-of-day), reflection for spatially symmetric data (centered images), and full for maximally symmetric problems. When in doubt, start with cyclic symmetry -- it provides a meaningful constraint with minimal risk of underfitting. Monitor train-vs-validation gaps: if the gap is large, increase the symmetry constraint; if both are high, relax it.

@@ -1,0 +1,58 @@
+## Overview
+
+The Pauli Feature Map is the most general member of the Pauli-rotation feature map family, subsuming both the ZZ Feature Map and IQP encoding as special cases. It allows the user to specify **arbitrary Pauli strings** for the interaction terms, enabling custom-designed quantum kernels with tailored inductive biases.
+
+<DisplayMath formula="|\psi(\mathbf{x})\rangle = \left[\mathcal{U}_{\Phi(\mathbf{x})}\, H^{\otimes n}\right]^r |0\rangle^{\otimes n}" />
+
+where the feature-dependent unitary is parameterized by a configurable set of Pauli operators $P_S$:
+
+<DisplayMath formula="\mathcal{U}_{\Phi(\mathbf{x})} = \exp\left(i \sum_{S \subseteq \{0,\ldots,n-1\}} \phi_S(\mathbf{x})\, \bigotimes_{j \in S} P_j \right)" />
+
+Here $S$ ranges over subsets of qubits, $P_j \in \{I, X, Y, Z\}$ is the Pauli operator acting on qubit $j$, and $\phi_S(\mathbf{x})$ is the data-encoding function for that term.
+
+## Configurable Pauli Strings
+
+The key parameter of the Pauli Feature Map is the list of **Pauli strings** that define the interaction terms. Each string specifies which Pauli operators act on which qubits:
+
+- `"Z"` on qubit $i$: single-qubit $R_Z(x_i)$ rotation (same as IQP/ZZ single-qubit terms)
+- `"ZZ"` on qubits $i, j$: two-qubit $R_{ZZ}(x_i x_j)$ rotation (recovers the ZZ Feature Map)
+- `"XX"` on qubits $i, j$: two-qubit $R_{XX}$ interaction in the $X$-basis
+- `"YZ"` on qubits $i, j$: mixed-basis two-qubit interaction
+- `"ZZZ"` on qubits $i, j, k$: three-body interaction encoding triple feature products
+
+The ability to mix Pauli types within a single feature map allows the encoding to probe different **symmetry sectors** of the Hilbert space, potentially capturing problem structure that pure $Z$-basis encodings miss.
+
+## Basis Change Gates
+
+When the Pauli string contains non-$Z$ operators, the circuit must include **basis-change gates** before and after the diagonal rotation. The standard decomposition uses:
+
+- $X$-basis: Hadamard gates $H$ before and after the rotation ($H Z H = X$)
+- $Y$-basis: $R_X(\pi/2)^\dagger$ before and $R_X(\pi/2)$ after ($R_X(\pi/2)^\dagger Z\, R_X(\pi/2) = Y$)
+
+For a Pauli string like $X_0 Y_1 Z_2$, the circuit applies $H$ on qubit 0, $R_X(\pi/2)^\dagger$ on qubit 1, leaves qubit 2 unchanged, then performs a multi-controlled $R_Z$ rotation, and finally reverses the basis changes. This decomposition ensures that the full Pauli rotation:
+
+<DisplayMath formula="e^{-i\theta P_0 \otimes P_1 \otimes \cdots \otimes P_k} " />
+
+is correctly implemented using only native $R_Z$ gates and CNOTs.
+
+## Subsumption of ZZ Feature Map
+
+The ZZ Feature Map is exactly the Pauli Feature Map with all Pauli strings set to `"Z"` (single-qubit) and `"ZZ"` (two-qubit), using the $(\pi - x)$ phase convention. Setting all interaction terms to use only $Z$ operators eliminates the need for basis-change gates, recovering the simpler circuit structure. This hierarchy makes the Pauli Feature Map the natural generalization to explore when the ZZ kernel underperforms: one can systematically test whether $X$- or $Y$-basis interactions improve classification accuracy.
+
+## Custom Kernel Design
+
+The Pauli Feature Map enables **principled kernel engineering**. By choosing Pauli strings that align with known symmetries of the problem, one can construct quantum kernels with built-in inductive biases:
+
+- **Translationally invariant problems**: Use identical Pauli strings on all qubit pairs
+- **Locality-sensitive problems**: Restrict interactions to geometrically nearby qubits with local Pauli strings
+- **Problems with known interaction structure**: Match Pauli strings to the interaction graph of the underlying physical or statistical model
+
+The data-encoding function $\phi_S(\mathbf{x})$ can also be customized beyond simple products. Common choices include:
+
+<DisplayMath formula="\phi_{\{i\}}(x_i) = x_i, \qquad \phi_{\{i,j\}}(x_i, x_j) = (\pi - x_i)(\pi - x_j)" />
+
+but arbitrary nonlinear functions of the features are permitted, further expanding the expressiveness of the kernel.
+
+## Trade-offs and Practical Guidance
+
+The flexibility of the Pauli Feature Map comes at a cost: non-$Z$ Pauli strings require additional single-qubit gates for basis changes, increasing circuit depth and susceptibility to noise. Each non-$Z$ operator in a Pauli string adds two single-qubit gates (basis change and its inverse) per repetition. For NISQ deployment, restricting to $Z$-only strings (recovering the ZZ Feature Map) or using at most one non-$Z$ operator per string is recommended unless the hardware error rates are sufficiently low. The Pauli Feature Map is most valuable in the quantum kernel setting, where the feature map is fixed and no variational optimization is needed, allowing systematic exploration of Pauli string configurations via cross-validation.

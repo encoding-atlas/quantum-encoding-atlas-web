@@ -1,0 +1,38 @@
+## Overview
+
+The Quantum Approximate Optimization Algorithm (QAOA) encoding repurposes the alternating operator structure of QAOA as a **data-encoding ansatz**. Instead of encoding a combinatorial cost function, the cost unitary embeds classical features into the circuit, while the mixer unitary provides trainable entanglement. The result is a highly structured, depth-controlled feature map with strong connections to variational quantum algorithms.
+
+## Circuit Structure
+
+A $p$-layer QAOA encoding acts on the uniform superposition state and alternates between a cost unitary $U_C$ that encodes the data and a mixer unitary $U_M$ that entangles qubits:
+
+$$|\psi(\mathbf{x})\rangle = \prod_{l=1}^{p} U_M(\beta_l)\, U_C(\gamma_l, \mathbf{x})\, |+\rangle^{\otimes n}$$
+
+Here $\gamma_l$ and $\beta_l$ are variational parameters at layer $l$, and $\mathbf{x}$ is the classical input vector. The cost unitary encodes data through parameterized $ZZ$-interactions and single-qubit $Z$-rotations, while the mixer typically consists of transverse-field $R_X$ rotations.
+
+## Cost Unitary and Feature Maps
+
+The cost unitary supports two feature map modes:
+
+- **Linear**: $U_C(\gamma, \mathbf{x}) = \exp\!\bigl(-i\gamma \sum_i x_i Z_i\bigr)$, encoding each feature as a local $Z$-rotation scaled by $\gamma$.
+- **Quadratic**: $U_C(\gamma, \mathbf{x}) = \exp\!\bigl(-i\gamma \bigl[\sum_i x_i Z_i + \sum_{\langle i,j \rangle} x_i x_j Z_i Z_j\bigr]\bigr)$, adding pairwise feature products on edges of an interaction graph.
+
+The quadratic map produces a richer kernel but requires two-qubit $ZZ$ gates for every edge, increasing circuit depth.
+
+## The Role of $\gamma$ and $\beta$
+
+The parameters $\gamma_l$ (cost layer) and $\beta_l$ (mixer layer) control how strongly data is imprinted and how thoroughly it is mixed at each layer. Small $\gamma$ values produce nearly linear encodings; large values introduce higher-frequency oscillations in the feature map. The mixer angle $\beta$ governs the degree of entanglement redistribution between cost layers. Jointly optimizing $\{\gamma_l, \beta_l\}$ via a downstream loss function transforms the encoding from a fixed feature map into a **trainable kernel**.
+
+## Edge-Coloring and Depth Optimization
+
+For the quadratic cost unitary, $ZZ$ gates on non-overlapping edges can execute in parallel. The minimum number of parallel layers equals the **chromatic index** of the interaction graph. For a complete graph on $n$ qubits, edge coloring yields $n - 1$ (even $n$) or $n$ (odd $n$) parallel rounds, keeping depth linear in $n$ even though the edge count is $O(n^2)$.
+
+Sparse interaction graphs -- such as nearest-neighbor chains or heavy-hex topologies matching hardware connectivity -- reduce both gate count and depth at the expense of expressivity.
+
+## Relationship to QAOA for Optimization
+
+In combinatorial optimization, QAOA encodes a problem Hamiltonian into $U_C$ and uses $U_M$ to explore the solution space. In the encoding context, the same architecture is repurposed: the "cost function" is replaced by classical data, and the objective shifts from minimizing energy to maximizing classification accuracy. This dual interpretation means that theoretical results on QAOA convergence and approximation ratios can inform the choice of $p$ and graph topology for the encoding variant.
+
+## Practical Guidance
+
+QAOA encoding is most effective when the number of features matches or is close to the qubit count $n$, and when pairwise feature interactions are expected to be informative. Start with $p = 1$ and the linear feature map; increase $p$ and switch to quadratic only if validation performance plateaus. The $\gamma/\beta$ parameters should be initialized near zero and optimized jointly with any downstream classifier weights.

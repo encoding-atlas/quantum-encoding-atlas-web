@@ -1,0 +1,50 @@
+## Overview
+
+Hamiltonian encoding maps classical data into quantum states by treating the input vector as parameters of a physical Hamiltonian and applying the corresponding **time-evolution operator**. This physics-inspired approach produces feature maps that inherit the rich spectral structure of quantum many-body systems, making it a natural bridge between quantum simulation and quantum machine learning.
+
+## Core Formula
+
+Given a data-dependent Hamiltonian $H(\mathbf{x})$, the encoding unitary is the matrix exponential:
+
+$$U(t) = e^{-i H(\mathbf{x})\, t}$$
+
+where $t$ is the evolution time (a hyperparameter controlling encoding strength). The encoded state is $|\psi(\mathbf{x})\rangle = U(t)|0\rangle^{\otimes n}$, or more generally $U(t)|\psi_0\rangle$ for some fixed initial state $|\psi_0\rangle$.
+
+## Hamiltonian Types
+
+Four Hamiltonian families are commonly used, each with distinct gate decompositions and expressivity profiles:
+
+**IQP (Instantaneous Quantum Polynomial)**: Diagonal in the $Z$-basis, $H_{\text{IQP}} = \sum_i x_i Z_i + \sum_{i<j} x_i x_j Z_i Z_j$. Since all terms commute, no Trotter decomposition is needed. The resulting circuit consists of $R_Z$ and $R_{ZZ}$ gates only, requiring $O(n^2)$ gates for all-to-all connectivity.
+
+**XY Model**: $H_{\text{XY}} = \sum_{\langle i,j\rangle} x_k (X_i X_j + Y_i Y_j)$. This Hamiltonian conserves total magnetization and produces number-preserving unitaries. It requires $O(n)$ gates per Trotter step on a nearest-neighbor topology.
+
+**Heisenberg Model**: $H_{\text{Heis}} = \sum_{\langle i,j\rangle} x_k (X_i X_j + Y_i Y_j + Z_i Z_j)$. The full isotropic interaction is the most expressive but also the most gate-intensive, requiring $O(3n)$ two-qubit gates per Trotter step.
+
+**Pauli-Z Only**: $H_Z = \sum_i x_i Z_i$. The simplest case, equivalent to standard angle encoding with $R_Z$ rotations. No entanglement is generated, and the gate count is $O(n)$.
+
+## Trotter Decomposition
+
+When $H(\mathbf{x})$ contains non-commuting terms, the exact exponential cannot be implemented directly. The first-order Trotter-Suzuki decomposition approximates it as:
+
+$$e^{-iHt} \approx \left(\prod_k e^{-i H_k t/r}\right)^r$$
+
+where $H = \sum_k H_k$ and $r$ is the number of Trotter steps. Higher-order decompositions (second-order symmetric, fourth-order) improve accuracy at the cost of additional gates. The Trotter error scales as $O(t^2 / r)$ for first-order and $O(t^3 / r^2)$ for second-order.
+
+## Gate Counts by Type
+
+| Hamiltonian | Two-qubit gates per step | Trotter needed | Total for $r$ steps |
+|---|---|---|---|
+| IQP | $\binom{n}{2}$ | No | $\binom{n}{2}$ |
+| XY | $2(n-1)$ | Yes | $2r(n-1)$ |
+| Heisenberg | $3(n-1)$ | Yes | $3r(n-1)$ |
+| Pauli-Z | $0$ | No | $0$ |
+
+These counts assume nearest-neighbor connectivity. All-to-all topologies multiply the two-qubit gate count by $O(n)$.
+
+## Physics Simulation Applications
+
+Hamiltonian encoding is uniquely positioned at the intersection of quantum simulation and machine learning. When the data possesses structure that mirrors a physical system -- for example, spatial correlations resembling a spin chain, or temporal signals analogous to a driven quantum system -- the encoding naturally captures these correlations. This has been exploited in classifying phases of matter, predicting molecular properties, and learning symmetries of physical systems.
+
+## Practical Guidance
+
+Choose the Hamiltonian type based on the desired expressivity-depth tradeoff: IQP for shallow circuits with pairwise correlations, XY for number-conserving problems, and Heisenberg for maximum expressivity. The evolution time $t$ controls the "frequency" of the encoding and should be treated as a tunable hyperparameter, typically initialized to $t \in [0.1, 1.0]$. Use $r \geq 3$ Trotter steps for XY and Heisenberg models to keep approximation error below gate noise on current hardware.

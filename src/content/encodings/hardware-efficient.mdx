@@ -1,0 +1,52 @@
+## Overview
+
+Hardware-efficient encoding is a pragmatic quantum feature map designed to run natively on specific quantum processors with minimal compilation overhead. Rather than prescribing a fixed mathematical structure, it adapts the encoding circuit to match the **native gate set and qubit connectivity** of the target backend. The general form is:
+
+<DisplayMath formula="|\psi(\mathbf{x})\rangle = \prod_{l=1}^{L} \left[\mathcal{E}_l \cdot \bigotimes_i G_i^{(l)}(x_{i \bmod d})\right] |0\rangle^{\otimes n}" />
+
+where $G_i^{(l)}$ are native single-qubit gates parameterized by the input features and $\mathcal{E}_l$ is an entangling layer constructed from the hardware's native two-qubit gates (e.g., CNOT, CZ, ECR, or $\sqrt{\text{iSWAP}}$), respecting the physical qubit connectivity.
+
+## The Native Gate Philosophy
+
+Every quantum processor has a **native gate set**: the small collection of operations implemented directly in hardware without decomposition. For example:
+
+- **IBM backends**: $R_Z(\theta)$, $\sqrt{X}$, CNOT (or ECR on newer devices)
+- **Google Sycamore**: $\sqrt{\text{iSWAP}}$, phased-XZ gates
+- **Rigetti**: $R_Z(\theta)$, $R_X(\pm\pi/2)$, CZ
+- **IonQ trapped ions**: $R(\theta, \phi)$, $XX(\theta)$ (Molmer-Sorensen gate)
+
+When a circuit uses non-native gates, the compiler must **decompose** each one into a sequence of native operations, inflating the circuit depth and introducing additional error. Hardware-efficient encoding avoids this overhead entirely by constructing the feature map exclusively from native gates, resulting in the shortest possible compiled circuit for a given hardware target.
+
+## Connectivity-Aware Entangling Layers
+
+The entangling structure $\mathcal{E}_l$ is constrained by the **qubit connectivity graph** of the device. On a linear-chain architecture with nearest-neighbor coupling, only adjacent qubits can interact directly. On a heavy-hex lattice (IBM), each qubit connects to at most three neighbors. The hardware-efficient approach builds entangling layers that follow these constraints:
+
+<DisplayMath formula="\mathcal{E}_l = \prod_{(i,j) \in E_{\text{device}}} \text{CX}_{ij}" />
+
+where $E_{\text{device}}$ is the edge set of the hardware connectivity graph. This eliminates the need for SWAP gates that would otherwise be inserted by the transpiler to route interactions between non-adjacent qubits. Each SWAP gate costs three CNOTs, so avoiding even a few SWAPs can significantly reduce the effective circuit depth.
+
+## The Barren Plateau Trade-off
+
+Hardware-efficient circuits present a well-documented tension between expressibility and trainability. Kandala et al. (2017) demonstrated their practical utility for variational quantum eigensolver (VQE) applications, but subsequent work by McClean et al. (2018) showed that sufficiently deep hardware-efficient ansatze exhibit **barren plateaus**: the gradient of the cost function vanishes exponentially with qubit count.
+
+<DisplayMath formula="\text{Var}\left[\frac{\partial C}{\partial \theta_j}\right] \leq F(n, L) \sim O\left(b^{-n}\right)" />
+
+where $b > 1$ depends on the circuit structure. For hardware-efficient encodings used as fixed feature maps (without trainable parameters), this manifests as **exponential concentration** of the kernel: $K(\mathbf{x}, \mathbf{x}') \to 2^{-n}$ for most input pairs as depth increases. The practical implication is that hardware-efficient encoding depth should be carefully tuned -- deep enough to generate useful entanglement, but shallow enough to maintain meaningful gradients or kernel contrast.
+
+## Depth-Noise Balance
+
+On real quantum hardware, every gate introduces error. The **effective circuit fidelity** decays approximately as:
+
+<DisplayMath formula="\mathcal{F}_{\text{circuit}} \approx \prod_{g=1}^{G} (1 - \epsilon_g) \approx (1 - \bar{\epsilon})^G" />
+
+where $\epsilon_g$ is the error rate of gate $g$, $\bar{\epsilon}$ is the average gate error, and $G$ is the total gate count. For current devices with $\bar{\epsilon} \approx 10^{-3}$ for single-qubit gates and $\bar{\epsilon} \approx 10^{-2}$ for two-qubit gates, circuits with more than roughly 100 two-qubit gates produce results dominated by noise. Hardware-efficient encoding keeps $G$ minimal by construction, maximizing the signal that survives the noise floor.
+
+## Practical Deployment Considerations
+
+When deploying hardware-efficient encodings on real devices, several additional factors must be considered:
+
+- **Qubit selection**: Not all physical qubits perform equally. Calibration data should guide the choice of which qubits to use, favoring those with the lowest $T_1$/$T_2$ error rates and the best two-qubit gate fidelities.
+- **Dynamic decoupling**: Idle qubits accumulate decoherence. Hardware-efficient circuits minimize idle time by design, but inserting dynamical decoupling sequences (e.g., $X$-$X$ or $Y$-$Y$ echo pulses) on temporarily idle qubits can further improve results.
+- **Transpiler interaction**: Even hardware-efficient circuits may be rearranged by the transpiler's optimization passes. Verifying that the compiled circuit matches the intended structure is essential for reproducibility.
+
+Hardware-efficient encoding is the encoding of choice when the primary constraint is **device fidelity** rather than theoretical expressiveness. It trades mathematical elegance for practical noise resilience, making it the most deployable encoding on current NISQ hardware when circuit quality is the bottleneck.

@@ -1,0 +1,48 @@
+## Overview
+
+Data reuploading is a quantum encoding strategy where the classical input $\mathbf{x}$ is embedded **multiple times** across successive layers of a parameterized quantum circuit, interleaved with trainable unitary blocks. Unlike single-pass encodings that inject data once, data reuploading creates a deep circuit where the same features modulate rotations at every layer:
+
+<DisplayMath formula="|\psi(\mathbf{x}, \boldsymbol{\theta})\rangle = \prod_{l=1}^{L} U_l(\boldsymbol{\theta}_l)\, S(\mathbf{x})\, |0\rangle^{\otimes n}" />
+
+where $S(\mathbf{x})$ is a data-encoding layer (typically angle encoding) and $U_l(\boldsymbol{\theta}_l)$ is a trainable unitary with parameters $\boldsymbol{\theta}_l$. The key insight is that re-encoding the data at each layer dramatically expands the set of functions the circuit can represent.
+
+## Universal Approximation Theorem
+
+Perez-Salinas et al. (2020) proved that a **single-qubit** data reuploading circuit with $L$ layers can approximate any continuous function $f: \mathbb{R}^d \to \mathbb{R}$ to arbitrary precision, provided $L$ is sufficiently large. This is a quantum analogue of the classical universal approximation theorem for neural networks.
+
+The proof proceeds by showing that the output expectation value $\langle \sigma_z \rangle$ of the single-qubit circuit can be written as a **trigonometric polynomial** in the input features. Each additional reuploading layer increases the degree of accessible Fourier components, and sufficiently many layers can approximate any target function in the $L^2$ sense:
+
+<DisplayMath formula="\langle \sigma_z \rangle = \sum_{\boldsymbol{\omega} \in \Omega_L} c_{\boldsymbol{\omega}}(\boldsymbol{\theta})\, e^{i \boldsymbol{\omega} \cdot \mathbf{x}}" />
+
+where $\Omega_L$ is the set of Fourier frequencies accessible at depth $L$, and the coefficients $c_{\boldsymbol{\omega}}$ are determined by the trainable parameters.
+
+## Fourier Expressivity and Layer Depth
+
+The connection between data reuploading and Fourier analysis provides a precise characterization of expressivity. For a circuit with $L$ reuploading layers, each using angle encoding with rotation gates $R_Y(x_i)$, the accessible frequency spectrum is:
+
+<DisplayMath formula="\Omega_L = \left\{ \boldsymbol{\omega} \in \mathbb{Z}^d : \|\boldsymbol{\omega}\|_1 \leq L \right\}" />
+
+This means each additional layer adds one unit of "Fourier bandwidth," enabling the model to capture increasingly fine-grained features of the target function. The relationship is analogous to increasing the number of hidden neurons in a classical neural network: more layers yield a richer function class but at the cost of increased circuit depth and potential optimization difficulty.
+
+## Connection to Classical Neural Networks
+
+The parallel to classical deep learning runs deeper than the universal approximation result. A data reuploading circuit can be viewed as a **quantum neural network** where:
+
+- Each reuploading layer corresponds to a hidden layer
+- The data-encoding gates $S(\mathbf{x})$ play the role of input injection (analogous to skip connections)
+- The trainable blocks $U_l(\boldsymbol{\theta}_l)$ serve as learnable weight matrices
+- The final measurement acts as the output activation function
+
+This structural correspondence has led to the term "quantum re-uploading classifier" in the literature. Like classical neural networks, deeper reuploading circuits can represent more complex decision boundaries, but they also become harder to train due to the vanishing gradient (barren plateau) problem.
+
+## Cyclic Feature Mapping
+
+In the multi-qubit setting, data reuploading creates a **cyclic** interaction between features and trainable parameters. At each layer, the data is re-encoded in a basis that has been rotated by the previous trainable block. This means the effective encoding of features changes from layer to layer:
+
+<DisplayMath formula="S_l^{\text{eff}}(\mathbf{x}) = \left(\prod_{k=1}^{l-1} U_k\, S(\mathbf{x})\right)^\dagger S(\mathbf{x}) \left(\prod_{k=1}^{l-1} U_k\, S(\mathbf{x})\right)" />
+
+The trainable unitaries learn to rotate the encoding basis such that each reuploading layer captures different aspects of the input data. This adaptive basis selection is a key advantage over fixed encodings, where the encoding basis is determined entirely by the circuit architecture.
+
+## Practical Considerations
+
+Data reuploading is among the most expressive quantum encodings, but this expressivity comes with trade-offs. The circuit depth scales linearly with $L$, making deep reuploading circuits susceptible to decoherence on NISQ hardware. The trainable parameter count also grows as $O(Ln^2)$ for general two-qubit trainable blocks, increasing the optimization landscape complexity. Empirically, $L = 3$ to $L = 6$ layers provide a good balance between expressivity and trainability for problems with moderate feature dimensions ($d \leq 10$). For larger feature spaces, combining data reuploading with dimensionality reduction or using it on a subset of the most informative features is recommended.

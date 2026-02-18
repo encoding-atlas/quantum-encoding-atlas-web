@@ -1,0 +1,50 @@
+## Overview
+
+The ZZ Feature Map is Qiskit's standard implementation of a second-order Pauli-$Z$ feature map, widely adopted in quantum kernel learning and quantum support vector machines (QSVMs). It shares the same structural family as the IQP encoding but uses a specific **phase convention** that distinguishes it: features are embedded via $(\pi - x_i)$ phase shifts rather than direct products.
+
+<DisplayMath formula="|\psi(\mathbf{x})\rangle = \mathcal{U}_{\Phi(\mathbf{x})}^{(r)} H^{\otimes n} |0\rangle^{\otimes n}" />
+
+where each layer $\mathcal{U}_{\Phi(\mathbf{x})}$ applies single-qubit $Z$-rotations followed by two-qubit $ZZ$-interactions:
+
+<DisplayMath formula="\mathcal{U}_{\Phi(\mathbf{x})} = \exp\left(i \sum_{\{j,k\}} (\pi - x_j)(\pi - x_k)\, Z_j Z_k\right) \cdot \exp\left(i \sum_j (\pi - x_j)\, Z_j\right)" />
+
+## The $(\pi - x)$ Phase Convention
+
+The defining distinction between the ZZ Feature Map and the IQP encoding lies in how features enter the phase gates. While IQP uses $\phi(x_i) = x_i$ directly (or $\phi(x_i, x_j) = x_i x_j$ for two-qubit terms), the ZZ Feature Map applies the transformation $\phi(x_i) = \pi - x_i$ for single-qubit terms and $\phi(x_i, x_j) = (\pi - x_i)(\pi - x_j)$ for two-qubit terms.
+
+This convention has practical significance: when $x_i = \pi$, the phase contribution vanishes, creating a **natural origin** in the feature space. The $(\pi - x)$ mapping also affects the Fourier spectrum of the resulting kernel function, shifting which frequency components are accessible and altering the inductive bias of the learned model.
+
+## Quantum Kernel Computation
+
+The ZZ Feature Map is primarily designed for **quantum kernel methods**. The quantum kernel is defined as the squared fidelity between two encoded states:
+
+<DisplayMath formula="K(\mathbf{x}, \mathbf{x}') = \left|\langle 0|^{\otimes n} \mathcal{U}_{\Phi(\mathbf{x})}^\dagger \mathcal{U}_{\Phi(\mathbf{x}')} |0\rangle^{\otimes n}\right|^2" />
+
+This kernel can be estimated on quantum hardware by preparing $\mathcal{U}_{\Phi(\mathbf{x}')}|0\rangle^{\otimes n}$, applying $\mathcal{U}_{\Phi(\mathbf{x})}^\dagger$, and measuring the probability of the all-zeros outcome. For a dataset of $m$ samples, the full kernel matrix requires $O(m^2)$ circuit evaluations, each with multiple shots for statistical precision.
+
+## Connection to QSVM
+
+The quantum support vector machine (QSVM) introduced by Havlicek et al. (2019) used the ZZ Feature Map as its primary encoding. The algorithm proceeds in two steps:
+
+1. **Kernel estimation**: Compute $K(\mathbf{x}_i, \mathbf{x}_j)$ for all training pairs using the quantum circuit above.
+2. **Classical SVM**: Feed the quantum kernel matrix into a classical SVM solver (e.g., LIBSVM) to find the optimal decision boundary.
+
+This hybrid approach separates the quantum advantage question cleanly: if the quantum kernel captures structure in the data that classical kernels cannot efficiently approximate, the QSVM may outperform classical methods. The ZZ Feature Map's connection to IQP hardness results provides theoretical motivation for this possibility.
+
+## Comparison with IQP Encoding
+
+While structurally similar, the ZZ Feature Map and IQP encoding differ in several ways:
+
+| Property | ZZ Feature Map | IQP Encoding |
+|---|---|---|
+| Phase function | $(\pi - x_i)(\pi - x_j)$ | $x_i \cdot x_j$ |
+| Origin behavior | Zero phase at $x_i = \pi$ | Zero phase at $x_i = 0$ |
+| Ecosystem | Qiskit-native | Framework-agnostic |
+| Default reps | 2 | 1 |
+| Typical use | QSVM kernels | General feature maps |
+
+The two encodings generate different implicit feature spaces and therefore different kernel functions. In practice, the choice between them is often empirical: the best encoding depends on the structure of the target dataset.
+
+## Practical Usage
+
+The ZZ Feature Map with $r = 2$ repetitions is the most commonly benchmarked quantum feature map in the literature. For $n$ qubits with full (linear) entanglement, each layer contains $n$ single-qubit $R_Z$ gates and $n-1$ two-qubit $R_{ZZ}$ gates, giving a total circuit depth that scales linearly with both $n$ and $r$. Features should be scaled to $[0, 2\pi]$ before encoding to ensure meaningful coverage of the phase space.

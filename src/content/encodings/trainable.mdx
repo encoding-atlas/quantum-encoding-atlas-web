@@ -1,0 +1,45 @@
+## Overview
+
+Trainable encoding (also called a **parameterized feature map** or **variational encoding**) interleaves data-encoding gates with gates whose parameters are learned during training. Unlike fixed encodings where the circuit structure fully determines the feature map, trainable encodings adapt their embedding to the downstream task, blurring the boundary between feature map and model.
+
+## Circuit Architecture
+
+A trainable encoding circuit alternates between two types of layers:
+
+$$U(\mathbf{x}, \boldsymbol{\theta}) = \prod_{l=1}^{L} W(\boldsymbol{\theta}_l)\, S(\mathbf{x})$$
+
+where $S(\mathbf{x})$ is a data-encoding layer (e.g., $R_Y(x_i)$ on each qubit) and $W(\boldsymbol{\theta}_l)$ is a trainable layer containing parameterized rotations and entangling gates. The trainable parameters $\boldsymbol{\theta} = \{\boldsymbol{\theta}_1, \ldots, \boldsymbol{\theta}_L\}$ are optimized jointly with any classical post-processing.
+
+Each data-encoding layer $S(\mathbf{x})$ re-uploads the full input vector, a technique known as **data re-uploading**. This repetition is essential: a single encoding layer can only produce a limited Fourier spectrum, while $L$ repetitions enable the circuit to express trigonometric polynomials of degree up to $L$ in each input feature.
+
+## Initialization Strategies
+
+The choice of initial values for $\boldsymbol{\theta}$ significantly affects training dynamics:
+
+- **Zero initialization**: All trainable parameters start at $0$. The encoding begins as a purely data-driven map, and the optimizer gradually introduces learned structure. Simple but can lead to symmetry-related training plateaus.
+- **Xavier (Glorot) initialization**: Parameters are drawn from $\mathcal{U}(-\sqrt{6/(n_{\text{in}} + n_{\text{out}})},\; \sqrt{6/(n_{\text{in}} + n_{\text{out}})})$, adapted from classical neural network practice. Helps maintain gradient variance across layers.
+- **He initialization**: Parameters drawn from $\mathcal{N}(0, \sqrt{2/n_{\text{in}}})$. Designed for ReLU-like nonlinearities in classical networks; in the quantum context, it provides a wider initial parameter spread that can help escape narrow loss landscape valleys.
+- **Random uniform**: $\theta_i \sim \mathcal{U}(0, 2\pi)$. Maximizes initial expressivity but risks placing the circuit in a barren plateau where gradients vanish exponentially with qubit count.
+
+Empirically, small-magnitude initializations (Xavier or near-zero) tend to produce more trainable circuits for moderate qubit counts ($n \leq 12$).
+
+## Task-Specific Optimization
+
+The trainable parameters are optimized to minimize a task-specific loss function. For classification, this is typically cross-entropy over measurement outcomes; for regression, mean squared error. The optimization loop is:
+
+1. Encode a batch of training inputs $\{\mathbf{x}_i\}$ using the current $\boldsymbol{\theta}$.
+2. Measure expectation values of an observable (e.g., $\langle Z_0 \rangle$).
+3. Compute the loss and parameter gradients via the **parameter-shift rule**: $\partial_{\theta_k} f = \frac{1}{2}\bigl[f(\theta_k + \pi/2) - f(\theta_k - \pi/2)\bigr]$.
+4. Update $\boldsymbol{\theta}$ using a classical optimizer (Adam, L-BFGS, or COBYLA).
+
+This procedure jointly optimizes the encoding and the decision boundary, allowing the feature map to specialize for the problem at hand.
+
+## Connection to Quantum Neural Networks
+
+Trainable encodings are architecturally identical to **quantum neural networks** (QNNs) and **variational quantum eigensolvers** (VQEs). The distinction is conceptual rather than structural: in a QNN, the variational parameters define the model; in a trainable encoding, they define the feature map. When a trainable encoding feeds into a classical linear classifier, the combined system is equivalent to a QNN with a fixed final layer.
+
+This equivalence means that trainable encodings inherit both the expressive power and the challenges of QNNs -- including susceptibility to **barren plateaus** (exponentially vanishing gradients) as qubit count grows, and sensitivity to hardware noise during parameter optimization.
+
+## Practical Guidance
+
+Start with $L = 2$ repetition layers and increase only if validation performance is clearly underfitting. Use Xavier initialization and Adam with a learning rate of $\sim 0.01$. Monitor gradient norms during training: if they decay exponentially with $n$, reduce the number of trainable parameters or switch to a more structured ansatz. Trainable encodings shine when the optimal feature map is unknown and sufficient training data is available to learn it.
