@@ -1,0 +1,85 @@
+# Quantum Encoding Atlas
+
+> A comprehensive open-source Python library (`encoding-atlas`) and interactive website for quantum data encodings in machine learning. Provides 16 encoding implementations with a unified API across PennyLane, Qiskit, and Cirq, plus analysis tools and an evidence-based decision guide.
+
+## Overview
+
+Quantum Encoding Atlas helps researchers and practitioners choose and implement quantum data encodings (also called feature maps or data embeddings) for quantum machine learning (QML). The library provides a consistent interface to encode classical data into quantum states.
+
+Install: `pip install encoding-atlas`
+
+- [GitHub Repository](https://github.com/encoding-atlas/quantum-encoding-atlas): Source code, issues, and contributions
+- [PyPI Package](https://pypi.org/project/encoding-atlas/): Python package
+- [Documentation](https://encoding-atlas.github.io/quantum-encoding-atlas/): Full API reference, tutorials, and guides
+- [Interactive Website](https://q-encoding-atlas.web.app): Visual explorer with circuit diagrams, property comparisons, and decision guide
+
+## Encodings (16 total, 7 categories)
+
+### Angle-based
+
+- [Angle Encoding](https://q-encoding-atlas.web.app/encodings/angle): Maps each classical feature to a single-qubit rotation gate angle. One qubit per feature. Simplest encoding method.
+- [Higher-Order Angle Encoding](https://q-encoding-atlas.web.app/encodings/higher-order-angle): Extends angle encoding with polynomial feature interactions without entanglement.
+
+### Amplitude-based
+
+- [Amplitude Encoding](https://q-encoding-atlas.web.app/encodings/amplitude): Encodes normalized feature vectors into quantum state amplitudes, achieving exponential compression. Requires only log2(n) qubits for n features.
+
+### Basis
+
+- [Basis Encoding](https://q-encoding-atlas.web.app/encodings/basis): Maps binary feature vectors directly to computational basis states using X gates. One qubit per binary feature.
+
+### Entangling Feature Maps
+
+- [IQP Encoding](https://q-encoding-atlas.web.app/encodings/iqp): Instantaneous Quantum Polynomial circuits with provable classical hardness for sampling.
+- [ZZ Feature Map](https://q-encoding-atlas.web.app/encodings/zz-feature-map): Qiskit-standard entangling feature map with Hadamard, phase, and ZZ interaction layers.
+- [Pauli Feature Map](https://q-encoding-atlas.web.app/encodings/pauli-feature-map): Generalized feature map with configurable Pauli rotation strings for custom feature interactions.
+
+### Variational
+
+- [Data Reuploading](https://q-encoding-atlas.web.app/encodings/data-reuploading): Re-encodes classical data multiple times across layers, achieving universal function approximation.
+- [Hardware-Efficient Encoding](https://q-encoding-atlas.web.app/encodings/hardware-efficient): NISQ-optimized encoding using native gate sets and connectivity-respecting entanglement.
+- [QAOA Encoding](https://q-encoding-atlas.web.app/encodings/qaoa): QAOA-inspired encoding with alternating cost and mixer layers for combinatorial data.
+- [Trainable Encoding](https://q-encoding-atlas.web.app/encodings/trainable): Alternates data-dependent and trainable rotation layers for task-specific, optimizable encoding.
+
+### Physics-inspired
+
+- [Hamiltonian Encoding](https://q-encoding-atlas.web.app/encodings/hamiltonian): Encodes data via Hamiltonian time evolution with configurable interaction types (IQP, XY, Heisenberg).
+
+### Symmetry & Equivariant
+
+- [Symmetry-Inspired Feature Map](https://q-encoding-atlas.web.app/encodings/symmetry-inspired): Heuristic encoding incorporating symmetry-aware gates for data with known group structure.
+- [SO(2) Equivariant Feature Map](https://q-encoding-atlas.web.app/encodings/so2-equivariant): Rigorously equivariant encoding for 2D rotational symmetry using angular momentum eigenstates.
+- [Cyclic Equivariant Feature Map](https://q-encoding-atlas.web.app/encodings/cyclic-equivariant): Translationally invariant encoding preserving cyclic (Z_n) group symmetry via ring topology.
+- [Swap Equivariant Feature Map](https://q-encoding-atlas.web.app/encodings/swap-equivariant): Pairwise permutation-equivariant encoding using symmetric CZ gates for paired feature data.
+
+## Quick Decision Guide
+
+- **Binary/discrete data** -> Basis Encoding
+- **High-dimensional, continuous data (need qubit efficiency)** -> Amplitude Encoding
+- **Low-dimensional, continuous data (simplicity)** -> Angle Encoding
+- **Need feature correlations** -> IQP, ZZ Feature Map, or Pauli Feature Map
+- **NISQ hardware constraints** -> Hardware-Efficient Encoding
+- **Trainable/adaptive encoding** -> Data Reuploading or Trainable Encoding
+- **Data with known symmetries** -> Symmetry-Inspired, SO(2), Cyclic, or Swap Equivariant
+- **Combinatorial optimization data** -> QAOA Encoding
+- **Physics simulation data** -> Hamiltonian Encoding
+
+## Supported Frameworks
+
+- **PennyLane**: All 16 encodings
+- **Qiskit**: All 16 encodings
+- **Cirq**: All 16 encodings
+
+## Interactive Tools
+
+- [Encoding Catalog](https://q-encoding-atlas.web.app/encodings): Browse and filter all 16 encodings by category
+- [Compare Encodings](https://q-encoding-atlas.web.app/compare): Side-by-side property and resource comparison with radar charts
+- [Decision Guide](https://q-encoding-atlas.web.app/guide): Interactive wizard that recommends encodings based on your data type, feature count, hardware, and requirements
+
+## Optional
+
+- [API Reference](https://encoding-atlas.github.io/quantum-encoding-atlas/api/): Full Python API documentation
+- [Quickstart](https://encoding-atlas.github.io/quantum-encoding-atlas/quickstart/): Getting started tutorial
+- [Tutorials](https://encoding-atlas.github.io/quantum-encoding-atlas/tutorials/): In-depth guides for comparing, customizing, and benchmarking encodings
+- [Contributing](https://github.com/encoding-atlas/quantum-encoding-atlas/blob/master/CONTRIBUTING.md): How to contribute
+- [License](https://github.com/encoding-atlas/quantum-encoding-atlas/blob/master/LICENSE): MIT License
