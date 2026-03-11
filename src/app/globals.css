@@ -188,6 +188,7 @@
   /* Font families — populated by next/font CSS variables */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --font-display: var(--font-space-grotesk), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ================================================================
@@ -265,10 +266,18 @@
   }
 
   .gradient-text-quantum {
-    background: linear-gradient(135deg, var(--quantum-violet), var(--quantum-cyan));
+    background: linear-gradient(135deg, oklch(0.35 0.03 210), oklch(0.28 0.04 200));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    padding-bottom: 0.1em;
+    margin-bottom: -0.1em;
+  }
+
+  :is(.dark) .gradient-text-quantum {
+    background: linear-gradient(135deg, oklch(0.90 0.02 180), oklch(0.84 0.03 170));
+    -webkit-background-clip: text;
+    background-clip: text;
   }
 
   /* Page enter animation — CSS-only replacement for motion.div */
@@ -323,6 +332,15 @@
   .animate-quantum-pulse {
     animation: quantum-pulse 3s ease-in-out infinite;
   }
+
+  /* Floating ket notation — gentle bob */
+  .hero-float {
+    animation: hero-float 6s ease-in-out infinite;
+  }
+
+  .hero-float-reverse {
+    animation: hero-float-reverse 7s ease-in-out infinite;
+  }
 }
 
 @keyframes page-enter {
@@ -341,9 +359,21 @@
   50% { opacity: 0.6; }
 }
 
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes hero-float-reverse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(10px); }
+}
+
 /* Reduced motion overrides */
 @media (prefers-reduced-motion: reduce) {
-  .animate-quantum-pulse {
+  .animate-quantum-pulse,
+  .hero-float,
+  .hero-float-reverse {
     animation: none;
   }
 }

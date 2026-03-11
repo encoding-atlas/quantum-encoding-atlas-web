@@ -33,7 +33,7 @@ export function Navbar() {
             height={28}
             className="rounded-md"
           />
-          <span className="gradient-text-quantum">
+          <span className="font-display gradient-text-quantum">
             {SITE_CONFIG.name}
           </span>
         </Link>
